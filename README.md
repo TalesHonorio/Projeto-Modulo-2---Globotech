@@ -17,12 +17,11 @@ Todas as funcionalidades utilizam exclusivamente módulos da **biblioteca padrã
 Para executar o projeto, basta ter o Python instalado.  
 Não é necessário rodar `pip install` ou utilizar qualquer gerenciador de pacotes.
 
----
 
 ## Estrutura do Repositório
 
 ```bash
-projeto_engajamento_fase2/ # Pacote Principal
+Projeto-Modulo-2---Globotech/ # Pacote Principal
 │__init__.py
 ├── entidades/ # Sub-pacote
 │   ├── plataforma.py # Classe Plataforma
@@ -39,53 +38,87 @@ projeto_engajamento_fase2/ # Pacote Principal
 
 ```
 
+
+
 ## Objetivos do Projeto
 
-Nesta segunda fase, o foco principal foi aplicar os **princípios da Programação Orientada a Objetos (POO)** sobre a base lógica desenvolvida na fase anterior, garantindo um sistema mais:
+- Aplicar **princípios de POO** (Herança, Encapsulamento, Métodos Mágicos)  
+- Tornar o sistema mais **robusto**, **modular**, **extensível**, **coeso** e **reutilizável**  
+- Continuar as métricas da Fase 1 em um **menu interativo** com relatório de engajamento  
 
-- Robusto
-- Modular
-- Extensível
-- Coeso e reutilizável
 
----
+## Descrição Geral
 
-## Componentes e Funcionalidades
+O sistema simula a ingestão e análise de interações de usuários com conteúdos Globo (vídeos, podcasts, artigos). A partir de um arquivo CSV, ele:
 
-### Modelagem Orientada a Objetos
+1. **Carrega** cada linha como uma instância de `Interacao`.  
+2. **Gerencia** em memória:
+   - **Plataforma** (nome e ID incremental)
+   - **Conteúdo** (`Conteudo` e subclasses)
+   - **Usuário** e suas interações
+3. **Gera** relatórios textuais:
+   - Total de interações de engajamento (`like`, `share`, `comment`)
+   - Contagem por tipo (`view_start`, `like`, `share`, `comment`)
+   - Tempo total e médio de consumo
+   - Listagem de comentários
+   - Top-5 conteúdos por visualizações
 
-As principais entidades do sistema foram representadas por classes:
 
-- **Plataforma**: Representa o local de interação (ex: G1, Globoplay)
-- **Conteudo (e subclasses)**: 
-  - `Video`: com duração total do vídeo
-  - `Podcast`: com duração do episódio
-  - `Artigo`: com tempo estimado de leitura
-- **Interacao**: Modela cada interação do usuário (view, like, share, comment)
-- **Usuario**: Representa o usuário e suas interações
 
-Cada classe foi construída com:
-- Atributos encapsulados
-- Validação de dados com `property`
-- Métodos específicos de cálculo
-- Métodos mágicos `__str__`, `__repr__`, `__eq__`, `__hash__`
+## Principais Conceitos e Componentes
 
----
+1. **Plataforma**
+   - Guarda nome e ID  
+   - `@property` para validação e acesso  
+   - Métodos mágicos: `__str__`, `__repr__`, `__eq__`, `__hash__`
 
-### Sistema de Análise
+2. **Conteúdo & Subclasses**
+   - **Conteudo**: ID, nome, lista de interações  
+     - `adicionar_interacao()`  
+     - `calcular_total_interacoes_engajamento()`  
+     - `calcular_contagem_por_tipo_interacao()`  
+     - `calcular_tempo_total_consumo()` / `calcular_media_tempo_consumo()`  
+     - `listar_comentarios()`  
+   - **Fábrica**: `@classmethod criar_por_tipo()` escolhe `Video`, `Podcast` ou `Artigo`  
+   - **Video**: adiciona `duracao_total_video_seg` + `calcular_percentual_medio_assistido()`  
+   - **Podcast**: adiciona `duracao_total_episodio_seg`  
+   - **Artigo**: adiciona `tempo_leitura_estimado_seg`
 
-A classe `SistemaAnaliseEngajamento` centraliza o gerenciamento e análise:
+3. **Interação**
+   - Converte e valida `id_usuario`, `timestamp`, `watch_duration_seconds`  
+   - Restringe tipos a `view_start`, `like`, `share`, `comment`  
+   - Atributos privados + `@property`  
+   - Métodos mágicos: `__str__`, `__repr__`
 
-- **Gerenciamento interno ("CRUD")** de plataformas, conteúdos e usuários
-- **Processamento de interações via CSV** e transformação em objetos
-- **Vinculação lógica** entre usuários, conteúdos e plataformas
-- **Geração de relatórios**, incluindo:
-  - Total de interações
-  - Contagem por tipo
-  - Tempo total e médio de consumo
-  - Comentários por conteúdo
-  - Top conteúdos por engajamento
+4. **Usuário**
+   - Armazena `id_usuario` e lista de `Interacao`  
+   - Métodos para registrar, filtrar por tipo e descobrir plataformas mais frequentes
 
+5. **SistemaAnaliseEngajamento**
+   - **CRUD em memória**: dicionários para plataformas, conteúdos e usuários  
+   - **Processamento do CSV** → criação de objetos  
+   - **Vinculação**: cada `Interacao` é registrada em `Conteudo` e `Usuario`  
+   - **Relatórios**: métricas, rankings e listas detalhadas
+
+## Exemplo de Saída
+
+```text
+=== MENU PRINCIPAL ===
+1 – Métricas de Conteúdos
+2 – Informações de Usuários
+3 – Informações de Conteúdos
+4 – Informações de Plataformas
+0 – Sair
+Escolha uma opção: 1
+
+=== MENU DE MÉTRICAS ===
+1 – Total de interações por conteúdo
+2 – Contagem por tipo de interação
+3 – Tempo total de visualização
+4 – Tempo médio de visualização
+5 – Listar comentários
+6 – Top-5 conteúdos mais visualizados
+```
 ---
 
 ### Autores
