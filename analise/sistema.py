@@ -1,54 +1,67 @@
+import csv
 from entidades.plataforma import Plataforma
 from entidades.usuario import Usuario
+from entidades.conteudo import Conteudo, Video, Podcast, Artigo
+from entidades.interacao import Interacao
 
 class SistemaAnaliseEngajamento:
+    """
+    Orquestra Plataformas, Conteúdos, Usuários e Interações,
+    processa o CSV e gera relatórios de engajamento.
+    """
     VERSAO_ANALISE = "2.0"
 
     def __init__(self):
-        self.__plataformas_registradas = {}
-        self.__conteudos_registrados = {}
-        self.__usuarios_registrados = {}
+        self.__plataformas_registradas = {}    # {nome_plataforma: Plataforma}
+        self.__conteudos_registrados = {}      # {id_conteudo: Conteudo}
+        self.__usuarios_registrados = {}       # {id_usuario: Usuario}
         self.__proximo_id_plataforma = 1
 
-    def cadastrar_plataforma(self, nome_plataforma):
+    def cadastrar_plataforma(self, nome_plataforma: str) -> Plataforma:
         if nome_plataforma not in self.__plataformas_registradas:
-            plataforma = Plataforma(nome_plataforma, id_plataforma=self.__proximo_id_plataforma)
-            self.__plataformas_registradas[nome_plataforma] = plataforma
+            p = Plataforma(nome_plataforma, id_plataforma=self.__proximo_id_plataforma)
+            self.__plataformas_registradas[nome_plataforma] = p
             self.__proximo_id_plataforma += 1
         return self.__plataformas_registradas[nome_plataforma]
 
-    def obter_plataforma(self, nome_plataforma):
-        return self.__plataformas_registradas.get(nome_plataforma) or self.cadastrar_plataforma(nome_plataforma)
+    def obter_plataforma(self, nome_plataforma: str) -> Plataforma:
+        return (self.__plataformas_registradas.get(nome_plataforma)
+                or self.cadastrar_plataforma(nome_plataforma))
 
-    def listar_plataformas(self):
+    def listar_plataformas(self) -> list[Plataforma]:
         return list(self.__plataformas_registradas.values())
 
-    def _carregar_interacoes_csv(self, caminho_arquivo):
-        import csv
-        with open(caminho_arquivo, 'r', encoding='utf-8') as arquivo:
-            leitor = csv.DictReader(arquivo)
-            return list(leitor)
+    def listar_conteudos(self) -> list[Conteudo]:
+        return list(self.__conteudos_registrados.values())
 
-    def processar_interacoes_do_csv(self, caminho_arquivo):
-        from entidades.conteudo import Video
-        from entidades.interacao import Interacao
+    def listar_usuarios(self) -> list[Usuario]:
+        return list(self.__usuarios_registrados.values())
 
-        dados = self._carregar_interacoes_csv(caminho_arquivo)
-        for linha in dados:
+    def _carregar_interacoes_csv(self, caminho_arquivo: str) -> list[dict]:
+        with open(caminho_arquivo, newline='', encoding='utf-8') as f:
+            return list(csv.DictReader(f))
+
+    def processar_interacoes_do_csv(self, caminho_arquivo: str) -> None:
+        for linha in self._carregar_interacoes_csv(caminho_arquivo):
             try:
+                # Plataforma
                 plataforma = self.obter_plataforma(linha["plataforma"])
 
-                id_conteudo = linha["id_conteudo"]
+                # Conteúdo — fábrica na própria classe Conteudo
+                id_conteudo = int(linha["id_conteudo"])
                 nome_conteudo = linha["nome_conteudo"]
                 if id_conteudo not in self.__conteudos_registrados:
-                    self.__conteudos_registrados[id_conteudo] = Video(id_conteudo, nome_conteudo, 300)
+                    conteudo = Conteudo.criar_por_tipo(id_conteudo, nome_conteudo)
+                    self.__conteudos_registrados[id_conteudo] = conteudo
                 conteudo = self.__conteudos_registrados[id_conteudo]
 
-                id_usuario = linha["id_usuario"]
+                # Usuário
+                id_usuario = int(linha["id_usuario"])
                 if id_usuario not in self.__usuarios_registrados:
                     self.__usuarios_registrados[id_usuario] = Usuario(id_usuario)
                 usuario = self.__usuarios_registrados[id_usuario]
 
+                # Interação
                 interacao = Interacao(
                     conteudo_associado=conteudo,
                     id_usuario=id_usuario,
@@ -58,37 +71,66 @@ class SistemaAnaliseEngajamento:
                     watch_duration_seconds=linha.get("watch_duration_seconds", 0),
                     comment_text=linha.get("comment_text", "")
                 )
+
                 conteudo.adicionar_interacao(interacao)
                 usuario.registrar_interacao(interacao)
-            except Exception as e:
+
+            except ValueError as e:
                 print(f"Erro ao processar linha: {e}")
+            except KeyError as e:
+                print(f"Coluna faltando no CSV: {e}")
 
-    def gerar_relatorio_engajamento_conteudos(self, top_n=None):
-        conteudos = list(self.__conteudos_registrados.values())
-        if top_n:
-            conteudos = sorted(conteudos, key=lambda c: c.calcular_total_interacoes_engajamento(), reverse=True)[:top_n]
+    def gerar_relatorio_engajamento_conteudos(self, top_n: int = None) -> None:
+        conteudos = self.listar_conteudos()
+        if top_n is not None:
+            conteudos = sorted(
+                conteudos,
+                key=lambda c: c.calcular_total_interacoes_engajamento(),
+                reverse=True
+            )[:top_n]
+
         for c in conteudos:
-            print(f"{c.nome_conteudo} - {c.calcular_total_interacoes_engajamento()} interações")
+            total = c.calcular_total_interacoes_engajamento()
+            print(f"ID: {c.id_conteudo} | Nome: {c.nome_conteudo} | Interacoes: {total}")
 
-    def gerar_relatorio_atividade_usuarios(self, top_n=None):
-        usuarios = list(self.__usuarios_registrados.values())
-        if top_n:
-            usuarios = sorted(usuarios, key=lambda u: len(u._Usuario__interacoes_realizadas), reverse=True)[:top_n]
+    def gerar_relatorio_atividade_usuarios(self, top_n: int = None) -> None:
+        usuarios = self.listar_usuarios()
+        if top_n is not None:
+            usuarios = sorted(
+                usuarios,
+                key=lambda u: len(u.interacoes_realizadas),
+                reverse=True
+            )[:top_n]
+
         for u in usuarios:
-            print(f"{u.id_usuario} - {len(u._Usuario__interacoes_realizadas)} interações")
+            total = len(u.interacoes_realizadas)
+            print(f"ID: {u.id_usuario} | Interacoes: {total}")
 
-    def identificar_top_conteudos(self, metrica, n):
-        metrica_func = {
-            'tempo_total_consumo': lambda c: c.calcular_tempo_total_consumo(),
-            'media_tempo_consumo': lambda c: c.calcular_media_tempo_consumo(),
-            'visualizacoes': lambda c: c.contar_visualizacoes()
-        }.get(metrica)
+    def listar_conteudos_por_tipo(self, tipo: str) -> list[Conteudo]:
+        """
+        Retorna apenas os Conteudo do tipo 'video', 'podcast' ou 'artigo'.
+        """
+        mapping = {
+            'video': Video,
+            'podcast': Podcast,
+            'artigo': Artigo,
+        }
+        cls = mapping.get(tipo.lower())
+        return [c for c in self.listar_conteudos() if isinstance(c, cls)] if cls else []
 
-        if not metrica_func:
-            print("Métrica inválida.")
-            return
+    def identificar_top_por_tipo(self, tipo: str, top_n: int = 5) -> None:
+        """
+        Exibe os top N conteúdos de um determinado tipo
+        ordenados por engajamento.
+        """
+        conteudos = self.listar_conteudos_por_tipo(tipo)
+        top = sorted(
+            conteudos,
+            key=lambda c: c.calcular_total_interacoes_engajamento(),
+            reverse=True
+        )[:top_n]
 
-        conteudos = sorted(self.__conteudos_registrados.values(), key=metrica_func, reverse=True)[:n]
-        print(f"\nTop {n} conteúdos por {metrica.replace('_', ' ')}:")
-        for c in conteudos:
-            print(f"{c.nome_conteudo}: {metrica_func(c)}")
+        print(f"\nTop {top_n} {tipo}s por interações:")
+        for c in top:
+            total = c.calcular_total_interacoes_engajamento()
+            print(f"ID: {c.id_conteudo} | Nome: {c.nome_conteudo} | Interacoes: {total}")

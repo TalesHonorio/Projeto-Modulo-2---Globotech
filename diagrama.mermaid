@@ -1,0 +1,85 @@
+classDiagram
+    class SistemaAnaliseEngajamento {
+        - __plataformas_registradas: dict<string, Plataforma>
+        - __conteudos_registrados: dict<int, Conteudo>
+        - __usuarios_registrados: dict<int, Usuario>
+        - __proximo_id_plataforma: int
+        + cadastrar_plataforma(nome: string): Plataforma
+        + obter_plataforma(nome: string): Plataforma
+        + listar_plataformas(): List<Plataforma>
+        + processar_interacoes_do_csv(caminho: string): None
+        + gerar_relatorio_engajamento_conteudos(top_n: int): None
+        + gerar_relatorio_atividade_usuarios(top_n: int): None
+        + listar_conteudos_por_tipo(tipo: string): List<Conteudo>
+        + identificar_top_por_tipo(tipo: string, top_n: int): None
+    }
+
+    class Plataforma {
+        - __id_plataforma: int
+        - __nome_plataforma: string
+        + nome_plataforma(): string
+        + id_plataforma(): int
+        + __str__(): string
+        + __repr__(): string
+    }
+
+    class Usuario {
+        - __id_usuario: int
+        - __interacoes_realizadas: List<Interacao>
+        + registrar_interacao(interacao: Interacao): None
+        + obter_interacoes_por_tipo(tipo: string): List<Interacao>
+        + plataformas_mais_frequentes(top_n: int): List<Plataforma>
+    }
+
+    class Conteudo {
+        - _id_conteudo: int
+        - _nome_conteudo: string
+        - _interacoes: List<Interacao>
+        + adicionar_interacao(interacao: Interacao): None
+        + calcular_total_interacoes_engajamento(): int
+        + calcular_contagem_por_tipo_interacao(): dict<string,int>
+        + contar_view_starts(): int
+        + calcular_tempo_total_consumo(): int
+        + calcular_media_tempo_consumo(): float
+        + listar_comentarios(): List<string>
+        + criar_por_tipo(id: int, nome: string): Conteudo
+    }
+
+    class Video {
+        - __duracao_total_video_seg: int
+        + calcular_percentual_medio_assistido(): float
+    }
+
+    class Podcast {
+        - __duracao_total_episodio_seg: int
+    }
+
+    class Artigo {
+        - __tempo_leitura_estimado_seg: int
+    }
+
+    class Interacao {
+        - __id_interacao: int
+        - __conteudo_associado: Conteudo
+        - __id_usuario: int
+        - __timestamp_interacao: DateTime
+        - __plataforma_interacao: Plataforma
+        - __tipo_interacao: string
+        - __watch_duration_seconds: int
+        - __comment_text: string
+        + __str__(): string
+        + __repr__(): string
+    }
+
+    %% Relações
+    SistemaAnaliseEngajamento --> Plataforma
+    SistemaAnaliseEngajamento --> Usuario
+    SistemaAnaliseEngajamento --> Conteudo
+
+    Conteudo <|-- Video
+    Conteudo <|-- Podcast
+    Conteudo <|-- Artigo
+
+    Usuario --> Interacao
+    Conteudo --> Interacao
+    Plataforma <-- Interacao
