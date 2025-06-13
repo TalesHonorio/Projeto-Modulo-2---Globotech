@@ -34,10 +34,10 @@ Projeto-Modulo-2---Globotech/ # Pacote Principal
 │
 ├── main.py # Script principal de execução
 ├── interacoes_globo.csv # Arquivo de dados de entrada
+├── diagrama.mermaid # Diagrama de classes do sistema
 └── README.md # Este arquivo de documentação
 
 ```
-
 
 
 ## Objetivos do Projeto
@@ -108,6 +108,7 @@ O sistema simula a ingestão e análise de interações de usuários com conteú
 2 – Informações de Usuários
 3 – Informações de Conteúdos
 4 – Informações de Plataformas
+5 – Listar Podcasts
 0 – Sair
 Escolha uma opção: 1
 
